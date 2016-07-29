@@ -1,0 +1,15 @@
+{
+  "name": "triton-tracer",
+  "description": "Opentracing Prototype for Triton",
+  "version": "1.0.0",
+  "author": "Joyent (joyent.com)",
+  "private": true,
+  "dependencies": {
+    "assert-plus": "^1.0.0",
+    "bunyan": "^1.8.1",
+    "eslint": "1.10.1",
+    "node-uuid": "^1.4.7",
+    "opentracing": "^0.10.3"
+  },
+  "license": "MPL-2.0"
+}
