@@ -9,7 +9,7 @@
     "bunyan": "^1.8.1",
     "eslint": "1.10.1",
     "node-uuid": "^1.4.7",
-    "opentracing": "^0.10.3"
+    "opentracing": "^0.10.6"
   },
   "license": "MPL-2.0"
 }
