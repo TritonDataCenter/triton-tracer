@@ -114,7 +114,10 @@ server.on('after', function _auditAfter(req, res, route, err) {
     auditLogger(req, res, route, err);
 });
 
-server.get('/hello/:level', respond);
+server.get({
+    name: 'GetHello',
+    path: '/hello/:level'
+}, respond);
 
 server.listen(APP_PORT, function _onListen() {
     console.log('%s listening at %s', server.name, server.url);

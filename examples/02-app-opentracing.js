@@ -132,7 +132,7 @@ opentracing.initGlobalTracer(new tritonTracer.opentracer({
 
 // We do server.use instead of server.on('request', ...) because the 'request'
 // event is emitted before we've got the route.name.
-server.use(function _beforeReq(req, res, next) {
+server.use(function startTracing(req, res, next) {
     var extractedCtx;
     var fields = {};
     var restifyCarrier = tritonTracer.consts.RESTIFY_REQ_CARRIER;
@@ -201,7 +201,10 @@ server.on('after', function _auditAfter(req, res, route, err) {
     auditLogger(req, res, route, err);
 });
 
-server.get('/hello/:level', respond);
+server.get({
+    name: 'GetHello',
+    path: '/hello/:level'
+}, respond);
 
 server.listen(APP_PORT, function _onListen() {
     console.log('%s listening at %s', server.name, server.url);
