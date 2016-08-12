@@ -8,12 +8,12 @@
 
 var TritonTracerConstants = require('./lib/ot-constants.js');
 var TritonTracerOpenTracer = require('./lib/ot-tracer-imp.js');
+var TritonTracerRestifyClient = require('./lib/restify-client.js');
 var TritonTracerRestifyServer = require('./lib/restify-server.js');
-var TritonTracerWrappers = require('./lib/wrappers.js');
 
 module.exports = {
     consts: TritonTracerConstants,
     opentracer: TritonTracerOpenTracer,
-    restify: TritonTracerRestifyServer,
-    wrappers: TritonTracerWrappers
+    restifyClient: TritonTracerRestifyClient,
+    restifyServer: TritonTracerRestifyServer
 };

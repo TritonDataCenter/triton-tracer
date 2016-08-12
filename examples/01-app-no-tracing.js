@@ -51,16 +51,29 @@ var APP_NAME = 'ExampleServer';
 var APP_PORT = 8080;
 
 // Logs to stderr.
-var bunyanLogger = bunyan.createLogger({name: APP_NAME});
+var log = bunyan.createLogger({name: APP_NAME});
 var server;
 
 // We use this client for talking to ourself.
 var selfClient = restifyClients.createStringClient({
     agent: false,
-    log: bunyanLogger,
+    log: log,
     url: 'http://0.0.0.0:' + APP_PORT.toString(),
     version: '*'
 });
+
+// Does something then returns a number
+function doWork(callback) {
+    var count = 0;
+
+    assert.func(callback, 'callback');
+
+    while (Math.random() > 0.00000001) {
+        count++;
+    }
+
+    callback(null, count);
+}
 
 function respond(req, res, next) {
     var level;
@@ -82,7 +95,10 @@ function respond(req, res, next) {
     }
 
     if (level <= 0) {
-        _respond();
+        // on the lowest level we do some local processing then respond.
+        doWork(function (err, count) {
+            _respond();
+        });
         return;
     }
 
@@ -98,7 +114,7 @@ function respond(req, res, next) {
 }
 
 server = restify.createServer({
-    log: bunyanLogger,
+    log: log,
     name: APP_NAME
 });
 

@@ -47,7 +47,7 @@ var bunyan = require('bunyan');
 var restify = require('restify');
 var restifyClients = require('restify-clients');
 var opentracing = require('opentracing');
-var tritonTracer = require('../index'); // usually you'd use 'triton-tracer'
+var Tracer = require('../index'); // usually you'd use 'triton-tracer'
 
 var APP_NAME = 'ExampleServer';
 var APP_PORT = 8080;
@@ -55,16 +55,45 @@ var MICROS_PER_SECOND = 1000000;
 var NS_PER_MICROS = 1000;
 
 // Logs to stderr.
-var bunyanLogger = bunyan.createLogger({name: APP_NAME});
+var log = bunyan.createLogger({name: APP_NAME});
 var server;
 
 // We use this client for talking to ourself.
 var selfClient = restifyClients.createStringClient({
     agent: false,
-    log: bunyanLogger,
+    log: log,
     url: 'http://0.0.0.0:' + APP_PORT.toString(),
     version: '*'
 });
+
+// Does something then returns a number
+// Here as an example to show how local processing works in this mode.
+function doWork(req, callback) {
+    var count = 0;
+    var span;
+
+    assert.object(req, 'req');
+    assert.object(req.tritonTraceSpan, 'req.tritonTraceSpan');
+    assert.func(callback, 'callback');
+
+    // start a new child span
+    span = opentracing.startSpan('do_work', {
+        childOf: req.tritonTraceSpan.context()
+    });
+    span.log({event: 'start-work'});
+
+    while (Math.random() > 0.00000001) {
+        count++;
+    }
+
+    span.addTags({
+        'random.loops': count
+    });
+    span.log({event: 'done-work'});
+    span.finish();
+
+    callback(null, count);
+}
 
 function respond(req, res, next) {
     var client;
@@ -91,7 +120,10 @@ function respond(req, res, next) {
     }
 
     if (level <= 0) {
-        _respond();
+        // on the lowest level we do some local processing then respond.
+        doWork(req, function (err, count) {
+            _respond();
+        });
         return;
     }
 
@@ -121,13 +153,13 @@ function respond(req, res, next) {
 }
 
 server = restify.createServer({
-    log: bunyanLogger,
+    log: log,
     name: APP_NAME
 });
 
 // Start the tracing backend.
-opentracing.initGlobalTracer(new tritonTracer.opentracer({
-    logger: bunyanLogger
+opentracing.initGlobalTracer(new Tracer.opentracer({
+    log: log
 }));
 
 // We do server.use instead of server.on('request', ...) because the 'request'
@@ -135,13 +167,12 @@ opentracing.initGlobalTracer(new tritonTracer.opentracer({
 server.use(function startTracing(req, res, next) {
     var extractedCtx;
     var fields = {};
-    var restifyCarrier = tritonTracer.consts.RESTIFY_REQ_CARRIER;
+    var restifyCarrier = Tracer.consts.RESTIFY_REQ_CARRIER;
     var span;
     var spanName = (req.route ? req.route.name : 'http_request');
 
     extractedCtx = opentracing.extract(restifyCarrier, req);
     if (extractedCtx) {
-        // fields.childOf = extractedCtx;
         fields.continuationOf = extractedCtx;
     }
 

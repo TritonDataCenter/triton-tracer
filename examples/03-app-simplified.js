@@ -46,22 +46,49 @@ var assert = require('assert-plus');
 var bunyan = require('bunyan');
 var restify = require('restify');
 var restifyClients = require('restify-clients');
-var tritonTracer = require('../index'); // usually you'd use 'triton-tracer'
+var Tracer = require('../index'); // usually you'd use 'triton-tracer'
 
 var APP_NAME = 'ExampleServer';
 var APP_PORT = 8080;
 
 // Logs to stderr.
-var bunyanLogger = bunyan.createLogger({name: APP_NAME});
+var log = bunyan.createLogger({name: APP_NAME});
 var server;
 
 // We use this client for talking to ourself.
 var selfClient = restifyClients.createStringClient({
     agent: false,
-    log: bunyanLogger,
+    log: log,
     url: 'http://0.0.0.0:' + APP_PORT.toString(),
     version: '*'
 });
+
+// Does something then returns a number
+// Here as an example to show how local processing works in this mode.
+function doWork(req, callback) {
+    var count = 0;
+    var span;
+
+    assert.object(req, 'req');
+    assert.object(req.tritonTraceSpan, 'req.tritonTraceSpan');
+    assert.func(callback, 'callback');
+
+    // create a child span of the current req's span for our do_work execution
+    span = Tracer.restifyServer.startChildSpan(req, 'do_work');
+    span.log({event: 'start-work'});
+
+    while (Math.random() > 0.00000001) {
+        count++;
+    }
+
+    span.addTags({
+        'random.loops': count
+    });
+    span.log({event: 'done-work'});
+    span.finish();
+
+    callback(null, count);
+}
 
 function respond(req, res, next) {
     var client;
@@ -84,14 +111,17 @@ function respond(req, res, next) {
     }
 
     if (level <= 0) {
-        _respond();
+        // on the lowest level we do some local processing then respond.
+        doWork(req, function (err, count) {
+            _respond();
+        });
         return;
     }
 
     query = url.format({pathname: '/hello/' + (level - 1).toString()});
 
     // Get a wrapped client, then make our request.
-    client = tritonTracer.wrappers.restifyClientFromReq(selfClient, req);
+    client = Tracer.restifyClient.child(selfClient, req);
     client.get(query, function _getResponse(err, c_req, c_res, body) {
         // TODO handle err
         assert.ifError(err);
@@ -101,13 +131,12 @@ function respond(req, res, next) {
 }
 
 server = restify.createServer({
-    log: bunyanLogger,
+    log: log,
     name: APP_NAME
 });
 
 // Start the tracing backend and instrument this restify 'server'.
-tritonTracer.restify.initGlobalTracer({logger: bunyanLogger});
-tritonTracer.restify.initServer(server);
+Tracer.restifyServer.init({log: log, restifyServer: server});
 
 // This sets up to add req.log to all req objects
 server.use(restify.requestLogger());
