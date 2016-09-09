@@ -131,14 +131,14 @@ function respond(req, res, next) {
 
     // create a traced version of the client with our span
     client = selfClient.child({
-        before: function _addHeaders(opts) {
+        beforeSync: function _addHeaders(opts) {
             // outbound request means a new span
             span = opentracing.startSpan('client_request', {childOf: spanCtx});
             // Add headers to our outbound request
             opentracing.inject(span.context(), opentracing.FORMAT_TEXT_MAP,
                 opts.headers);
             span.log({event: 'client-request'});
-        }, after: function _onResponse(/* r_err, r_req, r_res */) {
+        }, afterSync: function _onResponse(/* r_err, r_req, r_res */) {
             // TODO: handle err
             span.log({event: 'client-response'});
             span.finish();
