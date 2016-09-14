@@ -50,6 +50,7 @@ var Tracer = require('../index'); // usually you'd use 'triton-tracer'
 
 var APP_NAME = 'ExampleServer';
 var APP_PORT = 8080;
+var RANDOM_WORK = 0.00000001;
 
 // Logs to stderr.
 var log = bunyan.createLogger({name: APP_NAME});
@@ -77,7 +78,7 @@ function doWork(req, callback) {
     span = Tracer.restifyServer.startChildSpan(req, 'do_work');
     span.log({event: 'start-work'});
 
-    while (Math.random() > 0.00000001) {
+    while (Math.random() > RANDOM_WORK) {
         count++;
     }
 
@@ -112,7 +113,9 @@ function respond(req, res, next) {
 
     if (level <= 0) {
         // on the lowest level we do some local processing then respond.
-        doWork(req, function (err, count) {
+        doWork(req, function _doWork(err, count) {
+            assert.ifError(err);
+            assert.ok(count > 0, 'should have looped more than once');
             _respond();
         });
         return;

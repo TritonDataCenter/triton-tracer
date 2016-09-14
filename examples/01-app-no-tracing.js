@@ -49,6 +49,7 @@ var restifyClients = require('restify-clients');
 
 var APP_NAME = 'ExampleServer';
 var APP_PORT = 8080;
+var RANDOM_WORK = 0.00000001;
 
 // Logs to stderr.
 var log = bunyan.createLogger({name: APP_NAME});
@@ -68,7 +69,7 @@ function doWork(callback) {
 
     assert.func(callback, 'callback');
 
-    while (Math.random() > 0.00000001) {
+    while (Math.random() > RANDOM_WORK) {
         count++;
     }
 
@@ -96,7 +97,9 @@ function respond(req, res, next) {
 
     if (level <= 0) {
         // on the lowest level we do some local processing then respond.
-        doWork(function (err, count) {
+        doWork(function _doWork(err, count) {
+            assert.ifError(err);
+            assert.ok(count > 0, 'should have looped more than once');
             _respond();
         });
         return;
