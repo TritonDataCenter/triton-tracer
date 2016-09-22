@@ -11,7 +11,7 @@
     "node-uuid": "^1.4.7",
     "opentracing": "^0.10.6",
     "restify": "^4.1.1",
-    "restify-clients": "git+https://github.com/joshwilsdon/restify-clients.git#master"
+    "restify-clients": "git+https://github.com/joshwilsdon/restify-clients.git#upstream"
   },
   "license": "MPL-2.0"
 }
