@@ -121,6 +121,11 @@ server = restify.createServer({
     name: APP_NAME
 });
 
+server.on('uncaughtException', function (req, res, route, err) {
+    log.error(err);
+    res.send(err);
+});
+
 // This sets up to add req.log to all req objects
 server.use(restify.requestLogger());
 
