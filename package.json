@@ -9,7 +9,7 @@
     "bunyan": "^1.8.1",
     "eslint": "1.10.1",
     "node-uuid": "^1.4.7",
-    "opentracing": "^0.10.6",
+    "opentracing": "0.12.1",
     "restify": "^4.1.1",
     "restify-clients": "git+https://github.com/joshwilsdon/restify-clients.git#upstream"
   },

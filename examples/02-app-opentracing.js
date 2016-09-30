@@ -78,7 +78,7 @@ function doWork(req, callback) {
     assert.func(callback, 'callback');
 
     // start a new child span
-    span = opentracing.startSpan('do_work', {
+    span = opentracing.globalTracer().startSpan('do_work', {
         childOf: req.tritonTraceSpan.context()
     });
     span.log({event: 'start-work'});
@@ -136,9 +136,9 @@ function respond(req, res, next) {
     client = selfClient.child({
         beforeSync: function _addHeaders(opts) {
             // outbound request means a new span
-            span = opentracing.startSpan('client_request', {childOf: spanCtx});
+            span = opentracing.globalTracer().startSpan('client_request', {childOf: spanCtx});
             // Add headers to our outbound request
-            opentracing.inject(span.context(), opentracing.FORMAT_TEXT_MAP,
+            opentracing.globalTracer().inject(span.context(), opentracing.FORMAT_TEXT_MAP,
                 opts.headers);
             span.log({event: 'client-request'});
         }, afterSync: function _onResponse(/* r_err, r_req, r_res */) {
@@ -174,13 +174,13 @@ server.use(function startTracing(req, res, next) {
     var span;
     var spanName = (req.route ? req.route.name : 'http_request');
 
-    extractedCtx = opentracing.extract(restifyCarrier, req);
+    extractedCtx = opentracing.globalTracer().extract(restifyCarrier, req);
     if (extractedCtx) {
         fields.continuationOf = extractedCtx;
     }
 
     // start/join a span
-    span = opentracing.startSpan(spanName, fields);
+    span = opentracing.globalTracer().startSpan(spanName, fields);
     span.addTags({
         'http.method': req.method,
         'http.url': req.url
