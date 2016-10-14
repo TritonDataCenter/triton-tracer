@@ -45,8 +45,9 @@ var url = require('url');
 var assert = require('assert-plus');
 var bunyan = require('bunyan');
 var restify = require('restify');
-var restifyClients = require('restify-clients');
 var Tracer = require('../index'); // usually you'd use 'triton-tracer'
+
+var restifyClients = Tracer.restifyClient;
 
 var APP_NAME = 'ExampleServer';
 var APP_PORT = 8080;
@@ -66,16 +67,17 @@ var selfClient = restifyClients.createStringClient({
 
 // Does something then returns a number
 // Here as an example to show how local processing works in this mode.
-function doWork(req, callback) {
+function doWork(callback) {
     var count = 0;
-    var span;
+    var serverSpan = Tracer.restifyServer.getCurrentSpan();
 
-    assert.object(req, 'req');
-    assert.object(req.tritonTraceSpan, 'req.tritonTraceSpan');
     assert.func(callback, 'callback');
+    assert.object(serverSpan, 'serverSpan');
 
-    // create a child span of the current req's span for our do_work execution
-    span = Tracer.restifyServer.startChildSpan(req, 'do_work');
+    span = serverSpan.tracer().startSpan('do_work', {
+        childOf: serverSpan.context()
+    });
+
     span.log({event: 'start-work'});
 
     while (Math.random() > RANDOM_WORK) {
@@ -113,7 +115,7 @@ function respond(req, res, next) {
 
     if (level <= 0) {
         // on the lowest level we do some local processing then respond.
-        doWork(req, function _doWork(err, count) {
+        doWork(function _doWork(err, count) {
             assert.ifError(err);
             assert.ok(count > 0, 'should have looped more than once');
             _respond();
@@ -123,9 +125,8 @@ function respond(req, res, next) {
 
     query = url.format({pathname: '/hello/' + (level - 1).toString()});
 
-    // Get a wrapped client, then make our request.
-    client = Tracer.restifyClient.child(selfClient, req);
-    client.get(query, function _getResponse(err, c_req, c_res, body) {
+    // Query ourself
+    selfClient.get(query, function _getResponse(err, c_req, c_res, body) {
         // TODO handle err
         assert.ifError(err);
         _respond(body);
