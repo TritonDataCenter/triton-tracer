@@ -6,6 +6,7 @@
 // Copyright (c) 2016, Joyent, Inc.
 //
 
+var assert = require('assert-plus');
 var cls = require('continuation-local-storage');
 var opentracing = require('opentracing');
 var TritonTracerConstants = require('./lib/ot-constants.js');
