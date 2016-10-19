@@ -16,18 +16,21 @@ var TritonTracerRestifyServer = require('./lib/restify-server.js');
 
 var alreadyRun = false;
 
-function init(options) {
+function init(options, callback) {
     // This function is only ever intended to be called once per program.
     // TODO: add test for this.
     assert.equal(alreadyRun, false, 'init() must only be called once');
     alreadyRun = true;
 
     process.TritonCLS = cls.createNamespace(TritonTracerConstants.CLS_NAMESPACE);
-    var Tracer = require('opentracing');
 
-    process.TritonCLS.run(function () {});
+    // initialize opentracing using the TritonTracer implementation
     opentracing.initGlobalTracer(new TritonTracerOpenTracer(options));
-    process.TritonCLS.set('TritonTracer', opentracing.globalTracer());
+
+    process.TritonCLS.run(function _callInitCallback() {
+        process.TritonCLS.set('TritonTracer', opentracing.globalTracer());
+        callback();
+    });
 }
 
 module.exports = {
