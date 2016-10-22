@@ -28,30 +28,24 @@ var opentracing = require('opentracing');
 var TritonTracerConstants = require('./lib/ot-constants.js');
 var TritonTracerOpenTracer = require('./lib/ot-tracer-imp.js');
 
-var initialized = false;
-var TritonCLS;
-var tracer;
-
 function init(options) {
     // This function is only ever intended to be called once per program.
-    assert.equal(initialized, false, 'init() must only be called once');
+    assert.equal(process.TritonTracer, undefined, 'init() must only be called once');
     initialized = true;
 
-    TritonCLS = cls.createNamespace(TritonTracerConstants.CLS_NAMESPACE);
+    process.TritonCLS = cls.createNamespace(TritonTracerConstants.CLS_NAMESPACE);
 
     // initialize opentracing using the TritonTracer implementation
     opentracing.initGlobalTracer(new TritonTracerOpenTracer(options));
-    tracer = opentracing.globalTracer();
+    process.TritonTracer = opentracing.globalTracer();
 }
 
 function getTracer() {
-    assert.ok(initialized, 'must call .init() before using tracer');
-    return tracer;
+    return process.TritonTracer;
 }
 
 function getCLS() {
-    assert.ok(initialized, 'must call .init() before using cls');
-    return TritonCLS;
+    return process.TritonCLS;
 }
 
 module.exports = {
