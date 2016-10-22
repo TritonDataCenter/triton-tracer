@@ -14,5 +14,8 @@
     "restify": "^4.1.1",
     "restify-clients": "git+https://github.com/joshwilsdon/restify-clients.git#rfd-35-cls"
   },
+  "optionalDependencies": {
+    "cls-hooked": "4.1.4"
+  },
   "license": "MPL-2.0"
 }
