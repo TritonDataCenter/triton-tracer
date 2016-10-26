@@ -15,15 +15,7 @@
 //
 
 var assert = require('assert-plus');
-try {
-    // cls-hooked requires *way* fewer monkey patches, but only works on node
-    // v4.5+, so we try that (it's an optionalDependency) first and fallback to
-    // the completely monkey-patched 'continuation-local-storage' otherwise.
-    var cls = require('cls-hooked');
-} catch (e) {
-    assert.equal(e.code, 'MODULE_NOT_FOUND');
-    var cls = require('continuation-local-storage');
-}
+var cls = require('cls-hooked');
 var opentracing = require('opentracing');
 var TritonTracerConstants = require('./lib/ot-constants.js');
 var TritonTracerOpenTracer = require('./lib/ot-tracer-imp.js');

@@ -7,15 +7,18 @@
   "dependencies": {
     "assert-plus": "^1.0.0",
     "bunyan": "^1.8.1",
-    "continuation-local-storage": "3.2.0",
-    "eslint": "1.10.1",
+    "cls-hooked": "git+https://github.com/joshwilsdon/cls-hooked.git#master",
     "node-uuid": "^1.4.7",
     "opentracing": "0.12.1",
     "restify": "^4.1.1",
     "restify-clients": "git+https://github.com/joshwilsdon/restify-clients.git#rfd-35-cls"
   },
-  "optionalDependencies": {
-    "cls-hooked": "4.1.4"
+  "devDependencies": {
+    "eslint": "1.10.1"
+  },
+  "engineStrict": true,
+  "engines": {
+    "node": ">=4.5.0"
   },
   "license": "MPL-2.0"
 }
