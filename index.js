@@ -8,15 +8,11 @@
 
 var assert = require('assert-plus');
 
+var restifyClients = require('./lib/restify-clients.js');
+var restifyServer = require('./lib/restify-server.js');
 var TritonTracerConstants = require('./lib/ot-constants.js');
-var TritonTracerRestifyClient = require('./lib/restify-client.js');
-var TritonTracerRestifyServer = require('./lib/restify-server.js');
 
 var _global = require('./global');
-
-function init(options) {
-    _global.init(options);
-}
 
 function getTracer() {
     return (_global.tracer());
@@ -27,10 +23,17 @@ function getCLS() {
 }
 
 module.exports = {
+    // getters
     cls: getCLS,
     consts: TritonTracerConstants,
-    init: init,
-    restifyClient: TritonTracerRestifyClient,
-    restifyServer: TritonTracerRestifyServer,
-    tracer: getTracer
+    tracer: getTracer,
+
+    // initialize the tracer
+    init: _global.init,
+
+    // instrumenters
+    instrumentRestifyServer: restifyServer.instrumentRestifyServer,
+
+    // wrappers
+    wrapRestifyClients: restifyClients.wrapRestifyClients
 };
