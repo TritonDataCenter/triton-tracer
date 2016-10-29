@@ -6,8 +6,6 @@
 // Copyright (c) 2016, Joyent, Inc.
 //
 
-var assert = require('assert-plus');
-
 var restifyClients = require('./lib/restify-clients.js');
 var restifyServer = require('./lib/restify-server.js');
 var TritonTracerConstants = require('./lib/ot-constants.js');

@@ -22,10 +22,11 @@ var TritonTracerOpenTracer = require('./lib/ot-tracer-imp.js');
 
 function init(options) {
     // This function is only ever intended to be called once per program.
-    assert.equal(process.TritonTracer, undefined, 'init() must only be called once');
-    initialized = true;
+    assert.equal(process.TritonTracer, undefined,
+        'init() must only be called once');
 
-    process.TritonCLS = cls.createNamespace(TritonTracerConstants.CLS_NAMESPACE);
+    process.TritonCLS
+        = cls.createNamespace(TritonTracerConstants.CLS_NAMESPACE);
 
     // initialize opentracing using the TritonTracer implementation
     opentracing.initGlobalTracer(new TritonTracerOpenTracer(options));
