@@ -5,6 +5,7 @@
 //
 // Copyright (c) 2016, Joyent, Inc.
 //
+/* eslint-disable no-magic-numbers */
 
 var EventEmitter = require('events').EventEmitter;
 var forkexec = require('forkexec');
@@ -68,7 +69,7 @@ function shutdownServer(t, emitter, state, serverName, callback) {
         headers: {
             connection: 'close'
         }, path: '/goodbye'
-    }, function (err, req, res, obj) {
+    }, function _postGoodbyeCb(err /* , req, res, obj */) {
         t.ifError(err, 'POST /goodbye to ' + serverName);
     });
 }
@@ -113,13 +114,13 @@ function checkValidSpan(t, logMsg, prefix) {
         + logMsg.parentSpanId);
 }
 
-function checkClientTag(t, logMsg, tagName, expectedValue) {
-    return checkTag(t, logMsg, tagName, expectedValue, 'client request');
-}
-
 function checkTag(t, logMsg, tagName, expectedValue, prefix) {
     t.equal(logMsg.tags[tagName], expectedValue, prefix + ' has tags[' + tagName
         + ']=' + logMsg.tags[tagName]);
+}
+
+function checkClientTag(t, logMsg, tagName, expectedValue) {
+    return checkTag(t, logMsg, tagName, expectedValue, 'client request');
 }
 
 test('single request correctly handles span',
@@ -134,35 +135,40 @@ function _testSingleRequest(t) {
             }, function startServer2(_, cb) {
                 startServer(t, emitter, 'server2', SERVER2_PORT, cb);
             }, function proxyOneToTwo(state, cb) {
-                clients['server1'].get({
+                clients.server1.get({
                     headers: {connection: 'close'},
                     path: '/proxy/' + SERVER2_PORT + '/hello'
-                }, function (err, req, res, obj) {
+                }, function _getProxyCb(err, req, res, obj) {
                     t.ifError(err, 'GET server1:/proxy/<server2>/hello');
                     state.resHeaders = res.headers;
+                    state.resBody = obj;
                     cb();
                 });
             }, function endServer1(state, cb) {
                 shutdownServer(t, emitter, state, 'server1', cb);
             }, function endServer2(state, cb) {
-                shutdownServer(t, emitter,  state,'server2', cb);
+                shutdownServer(t, emitter, state, 'server2', cb);
             }, function checkResults(state, cb) {
                 var clientReq;
-                var server1 = arrayifyStdout(state.results['server1'].stdout);
-                var server2 = arrayifyStdout(state.results['server2'].stdout);
+                var server1 = arrayifyStdout(state.results.server1.stdout);
+                var server2 = arrayifyStdout(state.results.server2.stdout);
                 var server1Req;
                 var server2Req;
-                var traceId;
 
                 // Step 1: Validate the data we got back from server1
 
-                t.equal(state.results['server1'].error, null, 'no error from server1');
-                t.equal(state.results['server1'].signal, null, 'no signal from server1');
-                t.equal(state.results['server1'].stderr, '', 'no stderr from server1');
-                t.equal(state.results['server1'].status, 0, 'server1 exited successfully');
+                t.equal(state.results.server1.error, null,
+                    'no error from server1');
+                t.equal(state.results.server1.signal, null,
+                    'no signal from server1');
+                t.equal(state.results.server1.stderr, '',
+                    'no stderr from server1');
+                t.equal(state.results.server1.status, 0,
+                    'server1 exited successfully');
 
                 // first message is not a tracing message, just for debugging.
-                t.equal(server1[0].msg, 'listening', 'first msg for server1 is "listening"');
+                t.equal(server1[0].msg, 'listening',
+                    'first msg for server1 is "listening"');
 
                 // second message is our outbound client request to server2
                 clientReq = server1[1];
@@ -170,7 +176,8 @@ function _testSingleRequest(t) {
                 t.equal(clientReq.operation, 'restify_request',
                     'client request has operation=restify_request');
                 checkClientTag(t, clientReq, 'component', 'restifyclient');
-                checkClientTag(t, clientReq, 'http.host', '127.0.0.1:' + SERVER2_PORT);
+                checkClientTag(t, clientReq, 'http.host',
+                    '127.0.0.1:' + SERVER2_PORT);
                 checkClientTag(t, clientReq, 'http.method', 'GET');
                 checkClientTag(t, clientReq, 'http.url', '/hello');
                 checkClientTag(t, clientReq, 'span.kind', 'request');
@@ -183,13 +190,18 @@ function _testSingleRequest(t) {
 
                 // Step 2: Validate the data we got back from server2
 
-                t.equal(state.results['server2'].error, null, 'no error from server2');
-                t.equal(state.results['server2'].signal, null, 'no signal from server2');
-                t.equal(state.results['server2'].stderr, '', 'no stderr from server2');
-                t.equal(state.results['server2'].status, 0, 'server2 exited successfully');
+                t.equal(state.results.server2.error, null,
+                    'no error from server2');
+                t.equal(state.results.server2.signal, null,
+                    'no signal from server2');
+                t.equal(state.results.server2.stderr, '',
+                    'no stderr from server2');
+                t.equal(state.results.server2.status, 0,
+                    'server2 exited successfully');
 
                 // first message is not a tracing message, just for debugging.
-                t.equal(server2[0].msg, 'listening', 'first msg for server2 is "listening"');
+                t.equal(server2[0].msg, 'listening',
+                    'first msg for server2 is "listening"');
 
                 // second message is our server handler's span
                 server2Req = server2[1];
@@ -205,6 +217,7 @@ function _testSingleRequest(t) {
                     'server1 client and server2 traceIds match');
                 t.equal(state.resHeaders['request-id'], server1Req.traceId,
                     'server1 returned correct "request-id" header');
+                t.equal(state.resBody, 'mu', 'server1 returned expected body');
                 t.equal(clientReq.parentSpanId, server1Req.spanId,
                     'server1 client\'s parent should server1 server span');
                 t.equal(server2Req.parentSpanId, clientReq.spanId,
@@ -217,7 +230,7 @@ function _testSingleRequest(t) {
                 cb();
             }
         ]
-    }, function _pipelineComplete(err, results) {
+    }, function _pipelineComplete(err /* , results */) {
         t.ifError(err, 'completed single request through servers 1 and 2');
         t.end();
     });
