@@ -217,7 +217,8 @@ function _testSingleRequest(t) {
                     'server1 client and server2 traceIds match');
                 t.equal(state.resHeaders['request-id'], server1Req.traceId,
                     'server1 returned correct "request-id" header');
-                t.equal(state.resBody, 'mu', 'server1 returned expected body');
+                t.deepEqual(state.resBody, {reply: 'hello'},
+                    'server1 returned expected body');
                 t.equal(clientReq.parentSpanId, server1Req.spanId,
                     'server1 client\'s parent should server1 server span');
                 t.equal(server2Req.parentSpanId, clientReq.spanId,
