@@ -12,7 +12,12 @@
     "opentracing": "0.12.1"
   },
   "devDependencies": {
-    "eslint": "1.10.1"
+    "eslint": "1.10.1",
+    "forkexec": "1.1.0",
+    "restify": "4.2.0",
+    "restify-clients": "git+https://github.com/joshwilsdon/restify-clients.git#rfd-35-cls",
+    "tape": "4.6.2",
+    "vasync": "1.6.4"
   },
   "engineStrict": true,
   "engines": {

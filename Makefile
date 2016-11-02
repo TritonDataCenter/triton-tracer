@@ -6,9 +6,14 @@
 # Copyright (c) 2016, Joyent, Inc.
 #
 
-node_modules/eslint:
+node_modules/.bin/eslint:
 	@npm install
 
-check: node_modules/eslint
+node_modules/.bin/tape:
+	@npm install
+
+check: node_modules/.bin/eslint
 	@./node_modules/.bin/eslint ./
 
+test: node_modules/.bin/tape
+	@./node_modules/.bin/tape tests/test.*.js

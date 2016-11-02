@@ -6,6 +6,7 @@
 // Copyright (c) 2016, Joyent, Inc.
 //
 
+var localSpan = require('./lib/local-span.js');
 var restifyClients = require('./lib/restify-clients.js');
 var restifyServer = require('./lib/restify-server.js');
 var TritonTracerConstants = require('./lib/ot-constants.js');
@@ -17,7 +18,7 @@ function getTracer() {
 }
 
 function getCLS() {
-    return (_global.getCLS());
+    return (_global.cls());
 }
 
 module.exports = {
@@ -25,6 +26,9 @@ module.exports = {
     cls: getCLS,
     consts: TritonTracerConstants,
     tracer: getTracer,
+
+    // helpers
+    localSpan: localSpan.createLocalSpan,
 
     // initialize the tracer
     init: _global.init,
