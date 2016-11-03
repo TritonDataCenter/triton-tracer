@@ -20,10 +20,21 @@ restifyClients = tritonTracer.wrapRestifyClients({
 // when it exits.
 function startServer(t, emitter, serverName, serverPort, clients, callback) {
     t.doesNotThrow(function _startServer() {
+        var env = {
+            HTTP_PORT: serverPort
+        };
+
+        if (process.env.CLS_EVERYWHERE) {
+            env.CLS_EVERYWHERE = process.env.CLS_EVERYWHERE;
+        }
+        if (process.env.DEBUG_CLS_HOOKED) {
+            env.DEBUG_CLS_HOOKED = process.env.DEBUG_CLS_HOOKED;
+        }
+
         forkexec.forkExecWait({
             argv: [process.execPath, __dirname + '/helper.dummy-server.js',
                 '--', serverName],
-            env: {HTTP_PORT: serverPort}
+            env: env
         }, function _startServerCb(err, info) {
             t.ifError(err, serverName + ' exited w/o error');
             if (!err) {

@@ -64,9 +64,11 @@ test('test w/ parallel requests', function _testParallelRequests(t) {
                         }, function _getProxyCb(err, req, res, obj) {
                             t.ifError(err, 'GET serverA:/proxy/<serverB>/'
                                 + 'delayeddebug (' + traceId + ')');
-                            requests[traceId].body = obj;
-                            requests[traceId].headers = res.headers;
-                            _cb();
+                            if (!err) {
+                                requests[traceId].body = obj;
+                                requests[traceId].headers = res.headers;
+                            }
+                            _cb(err);
                         });
                     }, inputs: Object.keys(requests)
                 }, function _doneAllRequests(err /* , results */) {
