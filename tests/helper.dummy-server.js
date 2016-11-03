@@ -5,6 +5,7 @@
 //
 // Copyright (c) 2016, Joyent, Inc.
 //
+/* eslint-disable no-magic-numbers */
 
 var assert = require('assert-plus');
 var bunyan = require('bunyan');
@@ -58,6 +59,16 @@ function debug(req, res, next) {
         reqHeaders: req.headers
     });
     next();
+}
+
+// same as debug but just after a random delay
+function delayedDebug(req, res, next) {
+    var randDelay = Math.floor(Math.random() * 50);
+
+    req.headers['x-random-delay'] = randDelay;
+    setTimeout(function _callDebug() {
+        debug(req, res, next);
+    }, randDelay);
 }
 
 function goodbye(req, res, next) {
@@ -166,6 +177,11 @@ server.get({
     name: 'Debug',
     path: '/debug'
 }, debug);
+
+server.get({
+    name: 'DelayedDebug',
+    path: '/delayeddebug'
+}, delayedDebug);
 
 server.get({
     name: 'Hello',

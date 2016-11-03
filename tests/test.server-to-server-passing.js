@@ -144,7 +144,8 @@ function _testSingleRequest(t) {
                 h.checkValidSpan(t, span);
                 h.checkSpanProp(t, span, 'operation', 'restify_request');
                 h.checkSpanTag(t, span, 'component', 'restifyclient');
-                h.checkSpanTag(t, span, 'http.host', '127.0.0.1:' + SERVERB_PORT);
+                h.checkSpanTag(t, span, 'http.host',
+                    '127.0.0.1:' + SERVERB_PORT);
                 h.checkSpanTag(t, span, 'http.method', 'GET');
                 h.checkSpanTag(t, span, 'http.url', '/hello');
                 h.checkSpanTag(t, span, 'span.kind', 'request');
@@ -162,7 +163,8 @@ function _testSingleRequest(t) {
                 h.checkValidSpan(t, span);
                 h.checkSpanProp(t, span, 'operation', 'restify_request');
                 h.checkSpanTag(t, span, 'component', 'restifyclient');
-                h.checkSpanTag(t, span, 'http.host', '127.0.0.1:' + SERVERB_PORT);
+                h.checkSpanTag(t, span, 'http.host',
+                    '127.0.0.1:' + SERVERB_PORT);
                 h.checkSpanTag(t, span, 'http.method', 'GET');
                 h.checkSpanTag(t, span, 'http.url', '/hello');
                 h.checkSpanTag(t, span, 'span.kind', 'request');

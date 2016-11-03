@@ -5,7 +5,7 @@
 //
 // Copyright (c) 2016, Joyent, Inc.
 //
-/* eslint-disable no-magic-numbers */
+/* eslint-disable no-magic-numbers, no-console */
 
 var EventEmitter = require('events').EventEmitter;
 var test = require('tape');
@@ -44,10 +44,9 @@ test('test w/ tracing disabled', function _testTracingDisabled(t) {
             }, function proxyOneToTwo(state, cb) {
                 clients.serverA.unwrapped.get({
                     headers: {
-                         connection: 'close',
-                         'x-hamburger-helper': 'tasty',
-                         'request-id': traceId,
-                         'triton-trace-enable': 'false'
+                        connection: 'close',
+                        'request-id': traceId,
+                        'triton-trace-enable': 'false'
                     },
                     path: '/proxy/' + SERVERB_PORT + '/debug'
                 }, function _getProxyCb(err, req, res, obj) {
@@ -67,7 +66,6 @@ test('test w/ tracing disabled', function _testTracingDisabled(t) {
                     = h.arrayifyStdout(state.results.serverA.stdout);
                 var serverBobjs
                     = h.arrayifyStdout(state.results.serverB.stdout);
-                var span;
                 var spans = {
                     serverA: {
                         req: []
@@ -141,8 +139,8 @@ test('test w/ tracing disabled', function _testTracingDisabled(t) {
                 t.comment('check debug data returned by server B ('
                     + traceId + ')');
                 if (process.env.TRITON_TRACER_DEBUG) {
-                     console.error(JSON.stringify(state.clientResults[0].body,
-                         null, 2));
+                    console.error(JSON.stringify(state.clientResults[0].body,
+                        null, 2));
                 }
                 t.equal(state.clientResults[0].body.spanCtx._traceEnabled,
                     false, 'tracing should be disabled at server B');
