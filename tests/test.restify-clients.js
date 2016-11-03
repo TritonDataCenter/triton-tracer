@@ -8,5 +8,7 @@
 // Overview:
 //
 //  This should test that the lib/restify-clients.js wrappers work as expected.
+//  It should also force restify-clients to do retries and ensure that works
+//  too.
 //
 /* eslint-disable no-magic-numbers */
