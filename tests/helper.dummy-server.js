@@ -8,6 +8,7 @@
 
 var assert = require('assert-plus');
 var bunyan = require('bunyan');
+var EventEmitter = require('events').EventEmitter;
 var restify = require('restify');
 var restifyClients = require('restify-clients');
 var tritonTracer = require('../index');
@@ -21,6 +22,7 @@ var server;
 var APP_PORT = process.env.HTTP_PORT || 8080; // eslint-disable-line
 var HTTP_OK = 200; // eslint-disable-line
 var RANDOM_WORK = 0.00000001; // eslint-disable-line
+var TIMEOUT_DELAY = 10;
 
 restifyClients = tritonTracer.wrapRestifyClients({
     restifyClients: restifyClients
@@ -41,6 +43,15 @@ function _exitOnStdoutEnd() {
 process.stdout.resume();
 process.stdout.on('end', _exitOnStdoutEnd);
 process.stdout.unref();
+
+function goodbye(req, res, next) {
+    res.send(HTTP_OK, {reply: 'goodbye'});
+    // shutdown the server ASAP
+    setImmediate(function _closeASAP() {
+        server.close();
+    });
+    next();
+}
 
 function hello(req, res, next) {
     res.send(HTTP_OK, {reply: 'hello'});
@@ -77,13 +88,23 @@ function proxyGET(req, res, next) {
     });
 }
 
-function goodbye(req, res, next) {
-    res.send(HTTP_OK, {reply: 'goodbye'});
-    // shutdown the server ASAP
-    setImmediate(function _closeASAP() {
-        server.close();
+// This handler tries a number of things that could possibly throw off the cls
+// implementation and cause us to somehow not have the span info when we make a
+// request. Then it just calls the proxyGET function.
+function trickyProxyGET(req, res, next) {
+    var emitter = new EventEmitter();
+
+    emitter.once('trickEmit', function _trickEmitted() {
+        proxyGET(req, res, next);
     });
-    next();
+
+    setImmediate(function _immediatelyTricky() {
+        process.nextTick(function _nextTickTrick() {
+            setTimeout(function _delayTrick() {
+                emitter.emit('trickEmit');
+            }, TIMEOUT_DELAY);
+        });
+    });
 }
 
 // Does something then returns a number
@@ -139,6 +160,11 @@ server.get({
     name: 'ProxyGet',
     path: '/proxy/:port/:endpoint'
 }, proxyGET);
+
+server.get({
+    name: 'TrickyProxyGet',
+    path: '/trickyproxy/:port/:endpoint'
+}, trickyProxyGET);
 
 server.post({
     name: 'Work',
