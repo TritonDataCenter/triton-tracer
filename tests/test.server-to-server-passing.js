@@ -8,138 +8,15 @@
 /* eslint-disable no-magic-numbers */
 
 var EventEmitter = require('events').EventEmitter;
-var forkexec = require('forkexec');
 var test = require('tape');
-var restify = require('restify');
-var restifyClients = require('restify-clients');
-var tritonTracer = require('../index');
 var vasync = require('vasync');
+
+var h = require('./helper.common-funcs');
 
 var SERVERA_PORT = 8081;
 var SERVERB_PORT = 8082;
 
 var clients = {};
-
-restifyClients = tritonTracer.wrapRestifyClients({
-    restifyClients: restifyClients
-});
-
-// start a dummy HTTP server that outputs logs to stdout and emits the results
-// when it exits.
-function startServer(t, emitter, serverName, serverPort, callback) {
-    t.doesNotThrow(function _startServer() {
-        forkexec.forkExecWait({
-            argv: [process.execPath, __dirname + '/helper.dummy-server.js',
-                '--', serverName],
-            env: {HTTP_PORT: serverPort}
-        }, function _startServerCb(err, info) {
-            t.ifError(err, serverName + ' exited w/o error');
-            if (!err) {
-                emitter.emit(serverName, info);
-            }
-        });
-
-        // Also create a client for this server
-        clients[serverName] = restify.createJsonClient({
-            url: 'http://127.0.0.1:' + serverPort
-        });
-    }, undefined, 'started ' + serverName);
-
-    // server started as child process, now returning.
-    callback();
-}
-
-function shutdownServer(t, emitter, state, serverName, callback) {
-    // setup a watcher for the event that will be emitted when the server
-    // actually ends.
-    emitter.once(serverName, function _waitServerA(info) {
-        t.ok(info, 'saw exit info for ' + serverName);
-        state.results[serverName] = info;
-
-        // also remove the client since the server is gone.
-        delete clients[serverName];
-
-        callback();
-    });
-
-    // Now that we're watching for exit, call the /goodbye endpoint which
-    // triggers an exit.
-    clients[serverName].post({
-        headers: {
-            connection: 'close'
-        }, path: '/goodbye'
-    }, function _postGoodbyeCb(err /* , req, res, obj */) {
-        t.ifError(err, 'POST /goodbye to ' + serverName);
-    });
-}
-
-function arrayifyStdout(stdout) {
-    var idx = 0;
-    var line;
-    var lines = stdout.split(/\n/);
-    var result = [];
-
-    for (idx = 0; idx < lines.length; idx++) {
-        line = lines[idx].trim();
-        if (line.length > 0) {
-            result.push(JSON.parse(lines[idx].trim()));
-        }
-    }
-
-    return (result);
-}
-
-function plausibleMsTimestamp(num) {
-    // TODO: update before November 20, 2286
-    if (num > 1400000000000 && num < 10000000000000) {
-        return true;
-    }
-
-    return false;
-}
-
-function mkSpanObj(spans, server, reqIdx, type) {
-    return {
-        // e.g. serverA.req[0].client
-        prefix: 'server' + server + '.req[' + reqIdx + '].' + type,
-        // e.g. spans.serverA.req[0].client
-        span: spans['server' + server].req[reqIdx][type]
-    };
-}
-
-function checkValidSpan(t, spanObj) {
-    var prefix = spanObj.prefix;
-    var span = spanObj.span;
-
-    t.equal(span.TritonTracing, 'TRITON', prefix
-        + ' has TritonTracing=TRITON');
-    t.ok(plausibleMsTimestamp(span.begin), prefix
-        + ' has a plausible begin timestamp: ' + span.begin);
-    t.ok(plausibleMsTimestamp(span.end), prefix
-        + ' has a plausible end timestamp: ' + span.end);
-    t.equal(span.elapsed, (span.end - span.begin), prefix
-        + ' elapsed matches (end - begin): ' + span.elapsed);
-    t.ok(span.traceId, prefix + ' has traceId: ' + span.traceId);
-    t.ok(span.spanId, prefix + ' has spanId: ' + span.spanId);
-    t.ok(span.parentSpanId, prefix + ' has parentSpanId: '
-        + span.parentSpanId);
-}
-
-function checkSpanProp(t, spanObj, propName, expectedValue) {
-    var prefix = spanObj.prefix;
-    var span = spanObj.span;
-
-    t.equal(span[propName], expectedValue, prefix + ' has .' + propName
-        + ' === ' + span[propName]);
-}
-
-function checkSpanTag(t, spanObj, tagName, expectedValue) {
-    var prefix = spanObj.prefix;
-    var span = spanObj.span;
-
-    t.equal(span.tags[tagName], expectedValue, prefix + ' has .tags[' + tagName
-        + '] === ' + span.tags[tagName]);
-}
 
 //
 // Overview:
@@ -179,11 +56,11 @@ function _testSingleRequest(t) {
             results: {}
         }, funcs: [
             function startServerA(_, cb) {
-                startServer(t, emitter, 'serverA', SERVERA_PORT, cb);
+                h.startServer(t, emitter, 'serverA', SERVERA_PORT, clients, cb);
             }, function startServerB(_, cb) {
-                startServer(t, emitter, 'serverB', SERVERB_PORT, cb);
+                h.startServer(t, emitter, 'serverB', SERVERB_PORT, clients, cb);
             }, function proxyOneToTwo(state, cb) {
-                clients.serverA.get({
+                clients.serverA.unwrapped.get({
                     headers: {connection: 'close'},
                     path: '/proxy/' + SERVERB_PORT + '/hello'
                 }, function _getProxyCb(err, req, res, obj) {
@@ -195,7 +72,7 @@ function _testSingleRequest(t) {
                     cb();
                 });
             }, function trickyProxyOneToTwo(state, cb) {
-                clients.serverA.get({
+                clients.serverA.unwrapped.get({
                     headers: {connection: 'close'},
                     path: '/trickyproxy/' + SERVERB_PORT + '/hello'
                 }, function _getProxyCb(err, req, res, obj) {
@@ -207,12 +84,14 @@ function _testSingleRequest(t) {
                     cb();
                 });
             }, function endServerA(state, cb) {
-                shutdownServer(t, emitter, state, 'serverA', cb);
+                h.shutdownServer(t, emitter, state, 'serverA', clients, cb);
             }, function endServerB(state, cb) {
-                shutdownServer(t, emitter, state, 'serverB', cb);
+                h.shutdownServer(t, emitter, state, 'serverB', clients, cb);
             }, function checkResults(state, cb) {
-                var serverAobjs = arrayifyStdout(state.results.serverA.stdout);
-                var serverBobjs = arrayifyStdout(state.results.serverB.stdout);
+                var serverAobjs
+                    = h.arrayifyStdout(state.results.serverA.stdout);
+                var serverBobjs
+                    = h.arrayifyStdout(state.results.serverB.stdout);
                 var span;
                 var spans = {
                     serverA: {
@@ -260,40 +139,40 @@ function _testSingleRequest(t) {
                     'first obj for serverA has: msg === "listening"');
 
                 // second message is our outbound client request to serverB
-                span = mkSpanObj(spans, 'A', 0, 'client');
+                span = h.mkSpanObj(spans, 'A', 0, 'client');
                 t.comment('validate ' + span.prefix);
-                checkValidSpan(t, span);
-                checkSpanProp(t, span, 'operation', 'restify_request');
-                checkSpanTag(t, span, 'component', 'restifyclient');
-                checkSpanTag(t, span, 'http.host', '127.0.0.1:' + SERVERB_PORT);
-                checkSpanTag(t, span, 'http.method', 'GET');
-                checkSpanTag(t, span, 'http.url', '/hello');
-                checkSpanTag(t, span, 'span.kind', 'request');
+                h.checkValidSpan(t, span);
+                h.checkSpanProp(t, span, 'operation', 'restify_request');
+                h.checkSpanTag(t, span, 'component', 'restifyclient');
+                h.checkSpanTag(t, span, 'http.host', '127.0.0.1:' + SERVERB_PORT);
+                h.checkSpanTag(t, span, 'http.method', 'GET');
+                h.checkSpanTag(t, span, 'http.url', '/hello');
+                h.checkSpanTag(t, span, 'span.kind', 'request');
 
                 // third message is our server handler's span
-                span = mkSpanObj(spans, 'A', 0, 'server');
+                span = h.mkSpanObj(spans, 'A', 0, 'server');
                 t.comment('validate ' + span.prefix);
-                checkValidSpan(t, span);
-                checkSpanProp(t, span, 'operation', 'proxyget');
-                checkSpanTag(t, span, 'component', 'restify');
+                h.checkValidSpan(t, span);
+                h.checkSpanProp(t, span, 'operation', 'proxyget');
+                h.checkSpanTag(t, span, 'component', 'restify');
 
                 // forth message should be client request #2 (trickyproxy)
-                span = mkSpanObj(spans, 'A', 1, 'client');
+                span = h.mkSpanObj(spans, 'A', 1, 'client');
                 t.comment('validate ' + span.prefix);
-                checkValidSpan(t, span);
-                checkSpanProp(t, span, 'operation', 'restify_request');
-                checkSpanTag(t, span, 'component', 'restifyclient');
-                checkSpanTag(t, span, 'http.host', '127.0.0.1:' + SERVERB_PORT);
-                checkSpanTag(t, span, 'http.method', 'GET');
-                checkSpanTag(t, span, 'http.url', '/hello');
-                checkSpanTag(t, span, 'span.kind', 'request');
+                h.checkValidSpan(t, span);
+                h.checkSpanProp(t, span, 'operation', 'restify_request');
+                h.checkSpanTag(t, span, 'component', 'restifyclient');
+                h.checkSpanTag(t, span, 'http.host', '127.0.0.1:' + SERVERB_PORT);
+                h.checkSpanTag(t, span, 'http.method', 'GET');
+                h.checkSpanTag(t, span, 'http.url', '/hello');
+                h.checkSpanTag(t, span, 'span.kind', 'request');
 
                 // fifth message is our server handler's span (2nd request)
-                span = mkSpanObj(spans, 'A', 1, 'server');
+                span = h.mkSpanObj(spans, 'A', 1, 'server');
                 t.comment('validate ' + span.prefix);
-                checkValidSpan(t, span);
-                checkSpanProp(t, span, 'operation', 'trickyproxyget');
-                checkSpanTag(t, span, 'component', 'restify');
+                h.checkValidSpan(t, span);
+                h.checkSpanProp(t, span, 'operation', 'trickyproxyget');
+                h.checkSpanTag(t, span, 'component', 'restify');
 
                 // last (6th) message is goodbye!
                 t.equal(spans.serverA.goodbye.operation, 'goodbye',
@@ -336,18 +215,18 @@ function _testSingleRequest(t) {
                     'first obj for serverB has: msg === "listening"');
 
                 // second message is our server handler's span
-                span = mkSpanObj(spans, 'B', 0, 'server');
+                span = h.mkSpanObj(spans, 'B', 0, 'server');
                 t.comment('validate ' + span.prefix);
-                checkValidSpan(t, span);
-                checkSpanProp(t, span, 'operation', 'hello');
-                checkSpanTag(t, span, 'component', 'restify');
+                h.checkValidSpan(t, span);
+                h.checkSpanProp(t, span, 'operation', 'hello');
+                h.checkSpanTag(t, span, 'component', 'restify');
 
                 // third message is our server handler's span (req 1)
-                span = mkSpanObj(spans, 'B', 1, 'server');
+                span = h.mkSpanObj(spans, 'B', 1, 'server');
                 t.comment('validate ' + span.prefix);
-                checkValidSpan(t, span);
-                checkSpanProp(t, span, 'operation', 'hello');
-                checkSpanTag(t, span, 'component', 'restify');
+                h.checkValidSpan(t, span);
+                h.checkSpanProp(t, span, 'operation', 'hello');
+                h.checkSpanTag(t, span, 'component', 'restify');
 
                 // last (4th) message is goodbye!
                 t.equal(spans.serverB.goodbye.operation, 'goodbye',

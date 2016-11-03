@@ -44,6 +44,22 @@ process.stdout.resume();
 process.stdout.on('end', _exitOnStdoutEnd);
 process.stdout.unref();
 
+function debug(req, res, next) {
+    var cls = tritonTracer.cls();
+    var ctx = {};
+    var span = cls.get('tritonTraceSpan');
+
+    if (span) {
+        ctx = span._context;
+    }
+
+    res.send(HTTP_OK, {
+        spanCtx: ctx,
+        reqHeaders: req.headers
+    });
+    next();
+}
+
 function goodbye(req, res, next) {
     res.send(HTTP_OK, {reply: 'goodbye'});
     // shutdown the server ASAP
@@ -145,6 +161,11 @@ function work(req, res, next) {
         next();
     });
 }
+
+server.get({
+    name: 'Debug',
+    path: '/debug'
+}, debug);
 
 server.get({
     name: 'Hello',
