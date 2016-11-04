@@ -156,5 +156,6 @@ module.exports = {
     mkSpanObj: mkSpanObj,
     plausibleMsTimestamp: plausibleMsTimestamp,
     shutdownServer: shutdownServer,
-    startServer: startServer
+    startServer: startServer,
+    tritonTracer: tritonTracer
 };

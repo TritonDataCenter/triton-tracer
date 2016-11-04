@@ -183,15 +183,16 @@ server.get({
     path: '/delayeddebug'
 }, delayedDebug);
 
+server.post({
+    name: 'Goodbye',
+    path: '/goodbye'
+}, goodbye);
+
 server.get({
     name: 'Hello',
     path: '/hello'
 }, hello);
 
-server.post({
-    name: 'Goodbye',
-    path: '/goodbye'
-}, goodbye);
 
 server.get({
     name: 'ProxyGet',
