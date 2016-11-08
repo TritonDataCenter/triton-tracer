@@ -121,7 +121,8 @@ server = restify.createServer({
     name: APP_NAME
 });
 
-server.on('uncaughtException', function (req, res, route, err) {
+server.on('uncaughtException',
+function _uncaughtException(req, res, route, err) {
     log.error(err);
     res.send(err);
 });

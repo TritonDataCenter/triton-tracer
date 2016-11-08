@@ -45,9 +45,8 @@ var url = require('url');
 var assert = require('assert-plus');
 var bunyan = require('bunyan');
 var restify = require('restify');
-var Tracer = require('../index'); // usually you'd use 'triton-tracer'
-
-var restifyClients = Tracer.restifyClient;
+var restifyClients = require('restify-clients');
+var tritonTracer = require('../index'); // usually you'd use 'triton-tracer'
 
 var APP_NAME = 'ExampleServer';
 var APP_PORT = 8080;
@@ -55,12 +54,24 @@ var RANDOM_WORK = 0.00000001;
 
 // Logs to stderr.
 var log = bunyan.createLogger({name: APP_NAME});
-var server;
 
 // We use this client for talking to ourself.
-var selfClient = restifyClients.createStringClient({
+var selfClient;
+
+// the restify server
+var server;
+
+// initialize the tracer since we have log here. Needs to happen before
+// wrapRestifyClients.
+tritonTracer.init({log: log});
+
+// Wrap the clients with tracing magic.
+restifyClients = tritonTracer.wrapRestifyClients({
+    restifyClients: restifyClients
+});
+
+selfClient = restifyClients.createStringClient({
     agent: false,
-    log: log,
     url: 'http://0.0.0.0:' + APP_PORT.toString(),
     version: '*'
 });
@@ -68,14 +79,17 @@ var selfClient = restifyClients.createStringClient({
 // Does something then returns a number
 // Here as an example to show how local processing works in this mode.
 function doWork(callback) {
+    var cls = tritonTracer.cls();
     var count = 0;
-    var serverSpan = Tracer.restifyServer.getCurrentSpan();
+    var parentSpan = cls.get('tritonTraceSpan');
+    var span;
+    var tracer = tritonTracer.tracer();
 
     assert.func(callback, 'callback');
-    assert.object(serverSpan, 'serverSpan');
+    assert.object(parentSpan, 'parentSpan');
 
-    span = serverSpan.tracer().startSpan('do_work', {
-        childOf: serverSpan.context()
+    span = tracer.startSpan('do_work', {
+        childOf: parentSpan.context()
     });
 
     span.log({event: 'start-work'});
@@ -94,7 +108,6 @@ function doWork(callback) {
 }
 
 function respond(req, res, next) {
-    var client;
     var level;
     var query;
 
@@ -140,9 +153,10 @@ server = restify.createServer({
 });
 
 // Start the tracing backend and instrument this restify 'server'.
-Tracer.restifyServer.init({log: log, restifyServer: server});
+tritonTracer.instrumentRestifyServer({server: server});
 
-server.on('uncaughtException', function (req, res, route, err) {
+server.on('uncaughtException',
+function _uncaughtException(req, res, route, err) {
     log.error(err);
     res.send(err);
 });

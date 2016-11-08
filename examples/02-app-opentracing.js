@@ -59,14 +59,6 @@ var RANDOM_WORK = 0.00000001;
 var log = bunyan.createLogger({name: APP_NAME});
 var server;
 
-// We use this client for talking to ourself.
-var selfClient = restifyClients.createStringClient({
-    agent: false,
-    log: log,
-    url: 'http://0.0.0.0:' + APP_PORT.toString(),
-    version: '*'
-});
-
 // Does something then returns a number
 // Here as an example to show how local processing works in this mode.
 function doWork(req, callback) {
@@ -133,20 +125,30 @@ function respond(req, res, next) {
     query = url.format({pathname: '/hello/' + (level - 1).toString()});
 
     // create a traced version of the client with our span
-    client = selfClient.child({
-        beforeSync: function _addHeaders(opts) {
-            // outbound request means a new span
-            span = opentracing.globalTracer().startSpan('client_request', {childOf: spanCtx});
-            // Add headers to our outbound request
-            opentracing.globalTracer().inject(span.context(), opentracing.FORMAT_TEXT_MAP,
-                opts.headers);
-            span.log({event: 'client-request'});
-        }, afterSync: function _onResponse(/* r_err, r_req, r_res */) {
+    client = restifyClients.createStringClient({
+        agent: false,
+        after: function _onResponse(r_err, r_req, r_res, ctx, cb) {
             // TODO: handle err
+            if (r_err) {
+                span.addTags({error: true});
+            }
             span.log({event: 'client-response'});
             span.finish();
-        }
+            cb();
+        }, before: function _addHeaders(opts, cb) {
+            // outbound request means a new span
+            span = opentracing.globalTracer().startSpan('client_request',
+                {childOf: spanCtx});
+            // Add headers to our outbound request
+            opentracing.globalTracer().inject(span.context(),
+                opentracing.FORMAT_TEXT_MAP, opts.headers);
+            span.log({event: 'client-request'});
+            cb();
+        }, log: log,
+        url: 'http://0.0.0.0:' + APP_PORT.toString(),
+        version: '*'
     });
+
     client.get(query, function _getResponse(err, c_req, c_res, body) {
         // TODO handle err
         assert.ifError(err);
@@ -176,7 +178,7 @@ server.use(function startTracing(req, res, next) {
 
     extractedCtx = opentracing.globalTracer().extract(restifyCarrier, req);
     if (extractedCtx) {
-        fields.continuationOf = extractedCtx;
+        fields.childOf = extractedCtx;
     }
 
     // start/join a span
@@ -193,7 +195,8 @@ server.use(function startTracing(req, res, next) {
     next();
 });
 
-server.on('uncaughtException', function (req, res, route, err) {
+server.on('uncaughtException',
+function _uncaughtException(req, res, route, err) {
     log.error(err);
     res.send(err);
 });

@@ -10,6 +10,7 @@ var localSpan = require('./lib/local-span.js');
 var restifyClients = require('./lib/restify-clients.js');
 var restifyServer = require('./lib/restify-server.js');
 var TritonTracerConstants = require('./lib/ot-constants.js');
+var TritonTracerOpenTracer = require('./lib/ot-tracer-imp.js');
 
 var _global = require('./global');
 
@@ -35,6 +36,9 @@ module.exports = {
 
     // instrumenters
     instrumentRestifyServer: restifyServer.instrumentRestifyServer,
+
+    // in case someone just wants the tracer imp
+    opentracer: TritonTracerOpenTracer,
 
     // wrappers
     wrapRestifyClients: restifyClients.wrapRestifyClients
