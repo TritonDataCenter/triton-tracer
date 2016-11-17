@@ -24,9 +24,6 @@ function startServer(t, emitter, serverName, serverPort, clients, callback) {
             HTTP_PORT: serverPort
         };
 
-        if (process.env.CLS_EVERYWHERE) {
-            env.CLS_EVERYWHERE = process.env.CLS_EVERYWHERE;
-        }
         if (process.env.DEBUG_CLS_HOOKED) {
             env.DEBUG_CLS_HOOKED = process.env.DEBUG_CLS_HOOKED;
         }

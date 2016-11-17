@@ -22,10 +22,22 @@ function getCLS() {
     return (_global.cls());
 }
 
+function getCurrentSpan() {
+    var cls = _global.cls();
+    var span;
+
+    if (cls) {
+        span = cls.get(TritonTracerConstants.CLS_SPAN_KEY);
+    }
+
+    return (span);
+}
+
 module.exports = {
     // getters
     cls: getCLS,
     consts: TritonTracerConstants,
+    currentSpan: getCurrentSpan,
     tracer: getTracer,
 
     // helpers

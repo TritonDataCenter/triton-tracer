@@ -70,7 +70,7 @@ test('test restify-client retries', function _testClientRetries(t) {
 
                 state.spanCtx = span._context;
                 cls.run(function _inCls() {
-                    cls.set('tritonTraceSpan', span);
+                    cls.set(h.tritonTracer.consts.CLS_SPAN_KEY, span);
                     state.client.get({
                         headers: {connection: 'close'},
                         path: '/hi',

@@ -79,9 +79,8 @@ selfClient = restifyClients.createStringClient({
 // Does something then returns a number
 // Here as an example to show how local processing works in this mode.
 function doWork(callback) {
-    var cls = tritonTracer.cls();
     var count = 0;
-    var parentSpan = cls.get('tritonTraceSpan');
+    var parentSpan = tritonTracer.currentSpan();
     var span;
     var tracer = tritonTracer.tracer();
 

@@ -46,9 +46,8 @@ process.stdout.on('end', _exitOnStdoutEnd);
 process.stdout.unref();
 
 function debug(req, res, next) {
-    var cls = tritonTracer.cls();
     var ctx = {};
-    var span = cls.get('tritonTraceSpan');
+    var span = tritonTracer.currentSpan();
 
     if (span) {
         ctx = span._context;
