@@ -6,6 +6,7 @@
 // Copyright (c) 2016, Joyent, Inc.
 //
 
+var assert = require('assert-plus');
 var localSpan = require('./lib/local-span.js');
 var restifyClients = require('./lib/restify-clients.js');
 var restifyServer = require('./lib/restify-server.js');
@@ -31,6 +32,13 @@ function getCurrentSpan() {
     }
 
     return (span);
+}
+
+function setCurrentSpan(span) {
+    var cls = _global.cls();
+
+    assert.object(cls, 'cls');
+    cls.set(TritonTracerConstants.CLS_SPAN_KEY, span);
 }
 
 //
@@ -77,10 +85,11 @@ module.exports = {
     // debugging
     _findLoser: findLoser,
 
-    // getters
+    // getters/setters
     cls: getCLS,
     consts: TritonTracerConstants,
-    currentSpan: getCurrentSpan,
+    getCurrentSpan: getCurrentSpan,
+    setCurrentSpan: setCurrentSpan,
     tracer: getTracer,
 
     // helpers
