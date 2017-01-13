@@ -47,7 +47,7 @@ process.stdout.unref();
 
 function debug(req, res, next) {
     var ctx = {};
-    var span = tritonTracer.currentSpan();
+    var span = tritonTracer.getCurrentSpan();
 
     if (span) {
         ctx = span._context;

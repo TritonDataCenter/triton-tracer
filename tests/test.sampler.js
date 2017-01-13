@@ -96,6 +96,24 @@ function _testShouldEnable(t) {
     t.end();
 });
 
+test('shouldEnable ignores missing route',
+function _testShouldEnableIgnoreMissing(t) {
+    var sampling = {
+        route: {
+            ping: 0.01,
+            servereventheartbeat: 0.02,
+            servereventvmsupdate: 0.03
+        }
+    };
+
+    t.equal(shouldEnable({POST: '/tasks'}, sampling, 0.001), true,
+        '"POST /tasks" enabled on 0.001');
+    t.equal(shouldEnable({POST: '/tasks'}, sampling, 0.999), true,
+        '"POST /tasks" enabled on 0.999');
+
+    t.end();
+});
+
 test('shouldEnable should be at least somewhat random',
 function _testShouldEnableRandomness(t) {
     var flip;
