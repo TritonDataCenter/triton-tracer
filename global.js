@@ -16,7 +16,6 @@
 
 var assert = require('assert-plus');
 var cls = require('cls-hooked');
-var opentracing = require('opentracing');
 var TritonTracerConstants = require('./lib/ot-constants.js');
 var TritonTracerOpenTracer = require('./lib/ot-tracer-imp.js');
 
@@ -30,11 +29,8 @@ function init(options) {
     process.TritonCLS
         = cls.createNamespace(TritonTracerConstants.CLS_NAMESPACE);
 
-    // initialize opentracing using the TritonTracer implementation
-    tritonTracer = new TritonTracerOpenTracer(options);
-    opentracing.initGlobalTracer(tritonTracer);
-    process.TritonTracer = opentracing.globalTracer();
-    process.TritonTracer.sampling = tritonTracer.sampling;
+    // Create the tracer
+    process.TritonTracer = new TritonTracerOpenTracer(options);
 }
 
 function getTracer() {

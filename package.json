@@ -9,8 +9,7 @@
     "bunyan": "^1.8.1",
     "cls-hooked": "git+https://github.com/joshwilsdon/cls-hooked.git#master",
     "dtrace-provider": "0.8.0",
-    "node-uuid": "^1.4.7",
-    "opentracing": "0.12.1"
+    "node-uuid": "^1.4.7"
   },
   "devDependencies": {
     "eslint": "1.10.1",
