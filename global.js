@@ -20,8 +20,6 @@ var TritonTracerConstants = require('./lib/ot-constants.js');
 var TritonTracerOpenTracer = require('./lib/ot-tracer-imp.js');
 
 function init(options) {
-    var tritonTracer;
-
     // This function is only ever intended to be called once per program.
     assert.equal(process.TritonTracer, undefined,
         'init() must only be called once');
