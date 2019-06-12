@@ -21,8 +21,9 @@ var TritonTracerOpenTracer = require('./lib/ot-tracer-imp.js');
 
 function init(options) {
     // This function is only ever intended to be called once per program.
-    assert.equal(process.TritonTracer, undefined,
-        'init() must only be called once');
+    if (process.TritonTracer !== undefined) {
+        return;
+    }
 
     process.TritonCLS
         = cls.createNamespace(TritonTracerConstants.CLS_NAMESPACE);
