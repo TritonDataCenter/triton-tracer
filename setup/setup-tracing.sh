@@ -66,6 +66,7 @@ if [[ $uuid != $current_uuid ]]; then
     rm -rf /opt/smartdc/agents/lib/node_modules/cn-agent.orig
     mv /opt/smartdc/agents/lib/node_modules/cn-agent /opt/smartdc/agents/lib/node_modules/cn-agent.orig
     tar xzf "$filepath" -C /opt/smartdc/agents/lib/node_modules
+    echo "$uuid" > /opt/smartdc/agents/lib/node_modules/cn-agent/image-uuid
 fi
 
 # TODO: Install cn-agent on CN's too.
