@@ -1,4 +1,3 @@
-# This is the zone user-script that will be run once on instance create.
 apk update
 apk add bash
 apk add curl
