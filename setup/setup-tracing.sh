@@ -103,7 +103,7 @@ if [[ -z "$lxzone" ]]; then
   sdc-imgadm import -S https://images.joyent.com "${IMAGE_UUID}" || echo "Image already installed"
 
   # Download and convert the vm user-script to JSON format.
-  userscript=$(curl -k -sS -L https://raw.githubusercontent.com/joyent/triton-tracer/master/setup/user-script.sh | \
+  userscript=$(curl -k --fail -sS -L https://raw.githubusercontent.com/joyent/triton-tracer/rfd-35-cls/setup/user-script.sh | \
     /opt/smartdc/agents/lib/node_modules/cn-agent/node/bin/node -p \
     'var fs = require("fs"); JSON.stringify(fs.readFileSync(0).toString())')
 
