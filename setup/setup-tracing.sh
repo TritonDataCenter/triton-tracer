@@ -60,14 +60,14 @@ done
 
 # Install the RFD 35 cn-agent (hack - is there a better way?).
 uuid=$(updates-imgadm list -C experimental name=cn-agent -j | json -ga -c 'this.tags.buildstamp.substr(0, 15) === "rfd-35-cls-2019"' uuid | tail -1)
-current_uuid=$(cat /opt/smartdc/agents/lib/node_modules/cn-agent/image-uuid)
+current_uuid=$(cat /opt/smartdc/agents/lib/node_modules/cn-agent/image_uuid || echo "")
 if [[ $uuid != $current_uuid ]]; then
     filepath=/var/tmp/rfd-35-cls-cn-agent.tar.gz
     updates-imgadm get-file -C experimental "$uuid" > "$filepath"
     rm -rf /opt/smartdc/agents/lib/node_modules/cn-agent.orig
     mv /opt/smartdc/agents/lib/node_modules/cn-agent /opt/smartdc/agents/lib/node_modules/cn-agent.orig
     tar xzf "$filepath" -C /opt/smartdc/agents/lib/node_modules
-    echo "$uuid" > /opt/smartdc/agents/lib/node_modules/cn-agent/image-uuid
+    echo "$uuid" > /opt/smartdc/agents/lib/node_modules/cn-agent/image_uuid
 fi
 
 # TODO: Install cn-agent on CN's too.
