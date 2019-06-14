@@ -54,6 +54,7 @@ PATH=/usr/bin:/usr/sbin:/smartdc/bin:/opt/smartdc/bin
 # Install the RFD 35 branches.
 for name in docker cloudapi vmapi cnapi workflow papi napi imgapi
 do
+    echo "Updating ${name} to use tracing"
     uuid=$(updates-imgadm list -H -o uuid -C experimental "name=$name" version=~rfd-35-cls- | tail -1)
     sdcadm up -y -C experimental "$name@$uuid"
 done
@@ -62,6 +63,7 @@ done
 uuid=$(updates-imgadm list -C experimental name=cn-agent -j | json -ga -c 'this.tags.buildstamp.substr(0, 15) === "rfd-35-cls-2019"' uuid | tail -1)
 current_uuid=$(cat /opt/smartdc/agents/lib/node_modules/cn-agent/image_uuid || echo "")
 if [[ $uuid != $current_uuid ]]; then
+    echo "Updating cn-agent to use tracing"
     filepath=/var/tmp/rfd-35-cls-cn-agent.tar.gz
     updates-imgadm get-file -C experimental "$uuid" > "$filepath"
     rm -rf /opt/smartdc/agents/lib/node_modules/cn-agent.orig
@@ -125,6 +127,9 @@ if [[ -z "$lxzone" ]]; then
         "primary": true
       }
     ],
+    "tags": {
+      "triton.placement.exclude_virtual_servers": true
+    },
     "customer_metadata": {
       "user-script": $userscript
     }
