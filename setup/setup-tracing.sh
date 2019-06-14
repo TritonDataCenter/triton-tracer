@@ -152,13 +152,13 @@ fi
 
 # Wait for the user-script to complete.
 userscript_complete=
-for iteration in {1..1200}; do
+for iteration in {1..120}; do
     if [[ -f "/zones/${lxzone}/root/var/log/userscript-is-complete" ]]; then
         userscript_complete=1
         break
     fi
-    echo " ... waiting for zone userscript to finish ($iteration/1200)..."
-    sleep 1
+    echo " ... waiting for zone userscript to finish ($iteration/120)..."
+    sleep 10
 done
 
 if [[ -z $userscript_complete ]]; then
