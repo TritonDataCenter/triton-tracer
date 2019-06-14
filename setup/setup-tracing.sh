@@ -78,6 +78,9 @@ fi
 lxzone=$(vmadm lookup alias=$ALIAS)
 if [[ -z "$lxzone" ]]; then
 
+  # Instance must reside on the headnode (to allow zlogin hacks later).
+  headnode_uuid=$(sysinfo | json UUID)
+
   # Find admin uuid
   admin_uuid=$(sdc-useradm get admin | json uuid)
 
@@ -120,6 +123,7 @@ if [[ -z "$lxzone" ]]; then
     "kernel_version": "3.13.0",
     "billing_id": "${package_uuid}",
     "image_uuid": "${IMAGE_UUID}",
+    "server_uuid": "${headnode_uuid}",
     "resolvers": ["8.8.8.8","8.8.4.4"],
     "networks": [
       {
