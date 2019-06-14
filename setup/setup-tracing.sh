@@ -41,6 +41,7 @@ set -o pipefail
 
 if [[ $1 == "--debug" ]]; then
     set -o xtrace
+    TRACE=1
 fi
 
 function fatal() {
@@ -142,27 +143,39 @@ fi
 
 # Wait for the user-script to complete.
 userscript_complete=
-for iteration in {1..60}; do
+for iteration in {1..1200}; do
     if [[ -f "/zones/${lxzone}/root/var/log/userscript-is-complete" ]]; then
         userscript_complete=1
         break
     fi
-    echo " ... waiting for zone userscript to finish ..."
+    echo " ... waiting for zone userscript to finish ($iteration/1200)..."
     sleep 1
 done
 
 if [[ -z $userscript_complete ]]; then
-    fatal "${alias} userscript did not complete within one minute"
+    fatal "${alias} userscript did not complete in time"
 fi
 
 # Setup jill to access sdc-docker from the lx zone.
 mkdir -p "/zones/${lxzone}/root/root/.ssh"
 cp /root/.ssh/automation.id_rsa* "/zones/${lxzone}/root/root/.ssh/"
 cloudapi_ip=$(vmadm lookup -1 -j alias=cloudapi0 | json -ga nics | json -ga -c 'this.nic_tag === "external"' ip)
-zlogin "${lxzone}" /root/bin/sdc-docker-setup.sh -k "${cloudapi_ip}" jill /root/.ssh/automation.id_rsa
+# Alpine behaves strangely with zlogin (no USER or HOME env), so manually set
+# these environment vars.
+zlogin "${lxzone}" /bin/sh -c "export USER=root HOME=/root TRACE=${TRACE} && /root/bin/sdc-docker-setup.sh -k ${cloudapi_ip} jill /root/.ssh/automation.id_rsa"
+# Add docker TLS host, to stop SSL warnings.
+docker_ip=$(vmadm lookup -1 -j alias=docker0 | json -ga nics | json -ga -c 'this.nic_tag === "external"' ip)
+echo "${docker_ip} my.triton" >> "/zones/${lxzone}/root/etc/hosts"
+echo "export DOCKER_HOST=tcp://my.triton:2376; export DOCKER_TLS_VERIFY=1" >> "/zones/${lxzone}/root/root/.sdc/docker/jill/env.sh"
 
 # Launch docker compose to create the zipkin containers.
-zlogin "${lxzone}" /root/bin/docker-compose -f /root/docker-compose-tracing.yml up -d
+zlogin "${lxzone}" /bin/sh -c "/root/bin/docker-compose -f /root/docker-compose-tracing.yml up -d"
+
+# Find the IP of the docker zipkin instance.
+zipkin_ip=$(zlogin "${lxzone}" /bin/sh -c "/root/bin/docker inspect --format='{{.NetworkSettings.IPAddress}}' tracing-zipkin")
+if [[ -z $zipkin_ip ]]; then
+    fatal "Could not obtain the zipkin server address"
+fi
 
 # Create the ziploader service.
 rm -rf /opt/custom/ziploader
@@ -173,19 +186,12 @@ updates-imgadm get-file -C experimental -o /tmp/ziploader.$$.tgz \
 tar -zxf /tmp/ziploader.$$.tgz
 rm /tmp/ziploader.$$.tgz
 
-# Find the IP of the docker zipkin instance.
-zipkin_ip=$(zlogin "${lxzone}" /root/bin/docker inspect --format='{{.NetworkSettings.IPAddress}}' tracing-zipkin)
-
-if [[ -z $zipkin_ip ]]; then
-    fatal "Could not obtain the zipkin server address"
-fi
-
 # Start the ziploader, pointing at this zipkin instance.
-cd /opt/custom/ziploader && nohup ziploader.js -H "${zipkin_ip}" &
+nohup ./ziploader.js -H "${zipkin_ip}" &
 
 echo "* * * Successfully setup tracing * * *"
 echo "Zipkin: http://${zipkin_ip}:9411/"
 
-zlogin "${lxzone}" touch /var/log/tracing-helper-is-setup
+zlogin "${lxzone}" /bin/touch /var/log/tracing-helper-is-setup
 
 exit 0

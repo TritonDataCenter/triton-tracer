@@ -6,8 +6,12 @@ apk add openssh
 apk add docker
 
 # Install docker compose.
-curl --fail -sS -L https://github.com/docker/compose/releases/download/1.24.0/docker-compose-Linux-x86_64 -o /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
+# The easy way does not work on Alpine (due to using musl libc instead of glibc).
+# curl --fail -sS -L https://github.com/docker/compose/releases/download/1.24.0/docker-compose-Linux-x86_64 -o /usr/bin/docker-compose
+# chmod +x /usr/bin/docker-compose
+# So we use the hard way, of installing via python/pip.
+apk add python python-dev py-pip build-base libffi-dev openssl-dev libgcc
+pip install docker-compose
 
 # Get the sdc-docker-setup script.
 mkdir -p /root/bin
@@ -26,7 +30,7 @@ chmod +x /root/bin/docker
 # Create docker-compose wrapper script.
 cat > /root/bin/docker-compose <<EOF
 source /root/.sdc/docker/jill/env.sh
-/usr/local/bin/docker-compose "\$@"
+/usr/bin/docker-compose "\$@"
 EOF
 chmod +x /root/bin/docker-compose
 
