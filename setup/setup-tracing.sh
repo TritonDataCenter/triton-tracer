@@ -196,7 +196,7 @@ tar -zxf /tmp/ziploader.$$.tgz
 rm /tmp/ziploader.$$.tgz
 
 # Start the ziploader, pointing at this zipkin instance.
-nohup ./ziploader.js -H "${zipkin_ip}" &
+nohup /opt/custom/ziploader/ziploader.js -H "${zipkin_ip}" > /var/log/ziploader.log 2>&1 &
 
 echo "* * * Successfully setup tracing * * *"
 echo "Zipkin: http://${zipkin_ip}:9411/"
