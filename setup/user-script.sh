@@ -1,17 +1,11 @@
-apk update
-apk add bash
-apk add curl
-apk add openssl
-apk add openssh
-apk add docker
+apt update
+apt install -Y curl
+# Install docker cli.
+apt install docker.io
 
 # Install docker compose.
-# The easy way does not work on Alpine (due to using musl libc instead of glibc).
-# curl --fail -sS -L https://github.com/docker/compose/releases/download/1.24.0/docker-compose-Linux-x86_64 -o /usr/bin/docker-compose
-# chmod +x /usr/bin/docker-compose
-# So we use the hard way, of installing via python/pip.
-apk add python python-dev py-pip build-base libffi-dev openssl-dev libgcc
-pip install docker-compose
+curl --fail -sS -L https://github.com/docker/compose/releases/download/1.24.0/docker-compose-Linux-x86_64 -o /usr/bin/docker-compose
+chmod +x /usr/bin/docker-compose
 
 # Get the sdc-docker-setup script.
 mkdir -p /root/bin

@@ -23,13 +23,13 @@
 #
 # Overview of script actions:
 #  1. Updates Triton components to latest rfd-35-cls branch code.
-#  2. Creates an LX (Alpine) container and installs docker tools in it.
+#  2. Creates an LX (Ubuntu) container and installs docker tools in it.
 #  3. Sets up user 'jill' to access sdc-docker from the alpine container.
 #  4. Uses docker-compose in the alpine container to launch 3 zipkin containers
 #     (database, zipkin and zipkin-analyzer).
 #
 
-IMAGE_UUID="19aa3328-0025-11e7-a19a-c39077bfd4cf" # LX Alpine 3: 20170303
+IMAGE_UUID="7b5981c4-1889-11e7-b4c5-3f3bdfc9b88b" # LX Ubuntu 16.04
 MIN_MEMORY=256
 ALIAS=tracing-docker-setup-helper
 
