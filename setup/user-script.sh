@@ -1,7 +1,7 @@
 apt update
-apt install -Y curl
+apt install --yes curl
 # Install docker cli.
-apt install docker.io
+apt install --yes docker.io
 
 # Install docker compose.
 curl --fail -sS -L https://github.com/docker/compose/releases/download/1.24.0/docker-compose-Linux-x86_64 -o /usr/bin/docker-compose
