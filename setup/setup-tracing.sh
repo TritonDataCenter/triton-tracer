@@ -69,6 +69,8 @@ if [[ $uuid != $current_uuid ]]; then
     rm -rf /opt/smartdc/agents/lib/node_modules/cn-agent.orig
     mv /opt/smartdc/agents/lib/node_modules/cn-agent /opt/smartdc/agents/lib/node_modules/cn-agent.orig
     tar xzf "$filepath" -C /opt/smartdc/agents/lib/node_modules
+    # Restart cn-agent, to bring in all the tracing goodness.
+    svcadm restart cn-agent
     echo "$uuid" > /opt/smartdc/agents/lib/node_modules/cn-agent/image_uuid
 fi
 
