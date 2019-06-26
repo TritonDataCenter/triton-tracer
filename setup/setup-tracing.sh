@@ -169,19 +169,17 @@ fi
 mkdir -p "/zones/${lxzone}/root/root/.ssh"
 cp /root/.ssh/automation.id_rsa* "/zones/${lxzone}/root/root/.ssh/"
 cloudapi_ip=$(vmadm lookup -1 -j alias=cloudapi0 | json -ga nics | json -ga -c 'this.nic_tag === "external"' ip)
-# Alpine behaves strangely with zlogin (no USER or HOME env), so manually set
-# these environment vars.
-zlogin "${lxzone}" /bin/sh -c "export USER=root HOME=/root TRACE=${TRACE} && /root/bin/sdc-docker-setup.sh -k ${cloudapi_ip} jill /root/.ssh/automation.id_rsa"
+zlogin "${lxzone}" /bin/bash -c "TRACE=${TRACE} && /root/bin/sdc-docker-setup.sh -k -s ${cloudapi_ip} jill /root/.ssh/automation.id_rsa"
 # Add docker TLS host, to stop SSL warnings.
 docker_ip=$(vmadm lookup -1 -j alias=docker0 | json -ga nics | json -ga -c 'this.nic_tag === "external"' ip)
 echo "${docker_ip} my.triton" >> "/zones/${lxzone}/root/etc/hosts"
 echo "export DOCKER_HOST=tcp://my.triton:2376; export DOCKER_TLS_VERIFY=1" >> "/zones/${lxzone}/root/root/.sdc/docker/jill/env.sh"
 
 # Launch docker compose to create the zipkin containers.
-zlogin "${lxzone}" /bin/sh -c "/root/bin/docker-compose -f /root/docker-compose-tracing.yml up -d"
+zlogin "${lxzone}" /root/bin/docker-compose -f /root/docker-compose-tracing.yml up -d
 
 # Find the IP of the docker zipkin instance.
-zipkin_ip=$(zlogin "${lxzone}" /bin/sh -c "/root/bin/docker inspect --format='{{.NetworkSettings.IPAddress}}' tracing-zipkin")
+zipkin_ip=$(zlogin "${lxzone}" /root/bin/docker inspect --format='{{.NetworkSettings.IPAddress}}' tracing-zipkin)
 if [[ -z $zipkin_ip ]]; then
     fatal "Could not obtain the zipkin server address"
 fi
