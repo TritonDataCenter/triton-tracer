@@ -52,7 +52,7 @@ function fatal() {
 PATH=/usr/bin:/usr/sbin:/smartdc/bin:/opt/smartdc/bin
 
 # Install the RFD 35 branches.
-for name in docker cloudapi vmapi cnapi workflow papi napi imgapi
+for name in docker cloudapi vmapi cnapi workflow papi napi fwapi imgapi
 do
     echo "Updating ${name} to use tracing"
     uuid=$(updates-imgadm list -H -o uuid -C experimental "name=$name" version=~rfd-35-cls- | tail -1)
