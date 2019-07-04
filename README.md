@@ -49,21 +49,11 @@ following after you create your server with `restify.createServer`:
 var tritonTracer = require('triton-tracer');
 
 tritonTracer.instrumentRestifyServer({
-    server: server,
-    ignoreRoutes: null
+    server: server
 });
 ```
 
-where the `server` parameter is the server object returned by `restify.createServer`,
-and the optional `ignoreRoutes` is an array of route names that will not be
-traced, e.g.:
-
-```js
-tritonTracer.instrumentRestifyServer({
-    server: server,
-    ignoreRoutes: ['heartbeat', 'ping']
-});
-```
+where the `server` parameter is the server object returned by `restify.createServer`.
 
 Doing this will instrument the server using `server.use` and
 `server.on('after', ...)` with the appropriate handlers so that:
@@ -76,6 +66,15 @@ Doing this will instrument the server using `server.use` and
  * when a request has been handled, the span will be finished and a log written
    to the bunyan logger that was passed to `tritonTracer.init`.
 
+#### Disabling tracing for restify routes
+
+It is possible to disable tracing on a per route basis. To do so, add the
+`doNotTrace: true` setting when creating the route. Example:
+
+```js
+  server.get({ path: '/ping', name: 'Ping', doNotTrace: true },
+        onServerPing);
+```
 
 ### Instrumenting restify clients
 
