@@ -45,15 +45,25 @@ as the `tritonTracer.init` argument, sampling is discussed in a later section.
 In order to instrument your restify servier you should add code like the
 following after you create your server with `restify.createServer`:
 
-```
+```js
 var tritonTracer = require('triton-tracer');
 
 tritonTracer.instrumentRestifyServer({
-    server: server
+    server: server,
+    ignoreRoutes: null
 });
 ```
 
-where the `server` parameter is the server object returned by `restify.createServer`.
+where the `server` parameter is the server object returned by `restify.createServer`,
+and the optional `ignoreRoutes` is an array of route names that will not be
+traced, e.g.:
+
+```js
+tritonTracer.instrumentRestifyServer({
+    server: server,
+    ignoreRoutes: ['heartbeat', 'ping']
+});
+```
 
 Doing this will instrument the server using `server.use` and
 `server.on('after', ...)` with the appropriate handlers so that:
