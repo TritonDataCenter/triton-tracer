@@ -60,7 +60,7 @@ do
 done
 
 # Install the RFD 35 cn-agent (hack - is there a better way?).
-uuid=$(updates-imgadm list -C experimental name=cn-agent -j | json -ga -c 'this.tags.buildstamp.substr(0, 15) === "rfd-35-cls-2019"' uuid | tail -1)
+uuid=$(updates-imgadm list -C experimental name=cn-agent -j | json -ga -c 'this.tags.buildstamp.substr(0, 11) === "rfd-35-cls-"' uuid | tail -1)
 current_uuid=$(cat /opt/smartdc/agents/lib/node_modules/cn-agent/image_uuid || echo "")
 if [[ $uuid != $current_uuid ]]; then
     echo "Updating cn-agent to use tracing"
